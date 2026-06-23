@@ -11,17 +11,10 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { supabase } from './supabaseClient';
+
 const EVENT_NAMES = [
-  "CMP0",
-  "CMP1",
-  "CMP2",
-  "CMP3",
-  "TIMER",
-  "!CMP0",
-  "!CMP1",
-  "!CMP2",
-  "!CMP3",
-  "!TIMER",
+  "CMP0", "CMP1", "CMP2", "CMP3", "TIMER",
+  "!CMP0", "!CMP1", "!CMP2", "!CMP3", "!TIMER",
 ];
 
 const BIT_SHIFTS = [0, 3, 6, 9, 12, 16, 19, 22, 25, 28];
@@ -36,35 +29,26 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     let mounted = true;
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       setUser(session?.user ?? null);
       setLoading(false);
     });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
+  const signOut = async () => { await supabase.auth.signOut(); };
   return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>;
 }
 
-function useAuth() {
-  return useContext(AuthContext);
-}
+function useAuth() { return useContext(AuthContext); }
 
 function AuthGate() {
   const { user } = useAuth();
@@ -78,9 +62,7 @@ function AuthGate() {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) alert(error.message);
       else alert("Проверьте почту для подтверждения аккаунта");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   };
 
   const handleLogin = async () => {
@@ -88,35 +70,45 @@ function AuthGate() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) alert(error.message);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   };
 
   if (user) return null;
 
   return (
-    <div style={{ position: "absolute", top: 20, right: 20, zIndex: 50, width: 320, background: "white", border: "1px solid #ccc", borderRadius: 12, padding: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
-      <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Вход / регистрация</div>
+    <div style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 1000,
+      width: "90%",
+      maxWidth: "360px",
+      background: "white",
+      border: "1px solid #ccc",
+      borderRadius: 12,
+      padding: 20,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+      boxSizing: "border-box"
+    }}>
+      <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12, textAlign: "center" }}>Вход / регистрация</div>
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ width: "100%", padding: 10, marginBottom: 8, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: 12, marginBottom: 10, boxSizing: "border-box", borderRadius: 6, border: "1px solid #ccc" }}
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        style={{ width: "100%", padding: 10, marginBottom: 12, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: 12, marginBottom: 15, boxSizing: "border-box", borderRadius: 6, border: "1px solid #ccc" }}
       />
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={handleLogin} disabled={busy} style={btnStyle("#2196f3")}>Войти</button>
         <button onClick={handleSignUp} disabled={busy} style={btnStyle("#673ab7")}>Регистрация</button>
-      </div>
-      <div style={{ marginTop: 10, fontSize: 12, color: "#666" }}>
       </div>
     </div>
   );
@@ -125,15 +117,17 @@ function AuthGate() {
 function btnStyle(bg) {
   return {
     flex: 1,
-    padding: "10px 12px",
+    padding: "12px",
     background: bg,
     color: "white",
     border: "none",
     borderRadius: 8,
     cursor: "pointer",
     fontWeight: 700,
+    fontSize: "14px"
   };
 }
+
 function signedSpread(index) {
   if (index === 0) return 0;
   return index % 2 === 1 ? Math.ceil(index / 2) : -Math.ceil(index / 2);
@@ -153,35 +147,25 @@ function FsmEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, data }) {
     const loopStep = 18;
     const loopHeight = 100 + routeIndex * loopStep;
     const sideShift = (routeIndex - (routeTotal - 1) / 2) * 20;
-
     const startX = sourceX + NODE_RADIUS * 0.7;
     const endX = sourceX - NODE_RADIUS * 0.7;
     const topY = sourceY - loopHeight;
-
     const c1X = sourceX + 55 + sideShift;
     const c2X = sourceX - 55 + sideShift;
 
-    path = `M ${startX},${sourceY - 60}
-            C ${c1X},${topY}
-              ${c2X},${topY}
-              ${endX},${sourceY - 60}`;
-
+    path = `M ${startX},${sourceY - 60} C ${c1X},${topY} ${c2X},${topY} ${endX},${sourceY - 60}`;
     labelX = sourceX + sideShift;
     labelY = topY - 14;
   } else {
     const bendStep = 44;
     const bend = routeTotal > 1 ? signedSpread(routeIndex) * bendStep : 0;
-
     const dx = targetX - sourceX;
     const dy = targetY - sourceY;
     const len = Math.hypot(dx, dy) || 1;
-
     const nx = -dy / len;
     const ny = dx / len;
-
     const midX = (sourceX + targetX) / 2;
     const midY = (sourceY + targetY) / 2;
-
     const ctrlX = midX + nx * bend;
     const ctrlY = midY + ny * bend;
 
@@ -195,21 +179,19 @@ function FsmEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, data }) {
       <BaseEdge id={id} path={path} markerEnd={markerEnd} style={{ stroke: "black", strokeWidth: 2 }} />
       {label && (
         <EdgeLabelRenderer>
-          <div
-            style={{
-              position: "absolute",
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              background: "white",
-              border: "1px solid black",
-              borderRadius: 8,
-              padding: "2px 6px",
-              fontSize: 12,
-              fontWeight: 700,
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-              zIndex: 9999,
-            }}
-          >
+          <div style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            background: "white",
+            border: "1px solid black",
+            borderRadius: 8,
+            padding: "2px 6px",
+            fontSize: 12,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            zIndex: 9999,
+          }}>
             {label}
           </div>
         </EdgeLabelRenderer>
@@ -242,30 +224,45 @@ function FSMEditor() {
   const [isUploading, setIsUploading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
+  // Состояние мобильного меню
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Следим за шириной экрана
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsMenuOpen(true); // на десктопе всегда открыто
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const nodeTypes = useMemo(() => ({}), []);
   const edgeTypes = useMemo(() => ({ fsm: FsmEdge }), []);
 
-  const getNodeStyle = useCallback(
-    (id) => ({
-      background: contexts[id] ? "#ffcc80" : "#b3e5fc",
-      border: "1px solid black",
-      borderRadius: "50%",
-      width: NODE_SIZE,
-      height: NODE_SIZE,
-      display: visibility[id] ? "flex" : "none",
-      alignItems: "center",
-      justifyContent: "center",
-      textAlign: "center",
-      fontWeight: "bold",
-      zIndex: 1,
-    }),
-    [contexts, visibility]
-  );
+  const getNodeStyle = useCallback((id) => ({
+    background: contexts[id] ? "#ffcc80" : "#b3e5fc",
+    border: "1px solid black",
+    borderRadius: "50%",
+    width: NODE_SIZE,
+    height: NODE_SIZE,
+    display: visibility[id] ? "flex" : "none",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    fontWeight: "bold",
+    zIndex: 1,
+  }), [contexts, visibility]);
 
   useEffect(() => {
-    const radius = 200;
-    const cx = 300;
-    const cy = 300;
+    // Для мобилок уменьшаем радиус круга состояний, чтобы влезал в экран
+    const radius = isMobile ? 130 : 200;
+    const cx = isMobile ? 160 : 300;
+    const cy = isMobile ? 250 : 300;
+
     const initialNodes = Array.from({ length: 8 }, (_, i) => {
       const angle = (2 * Math.PI * i) / 8;
       return {
@@ -276,13 +273,10 @@ function FSMEditor() {
       };
     });
     setNodes(initialNodes);
-  }, [getNodeStyle, setNodes]);
+  }, [getNodeStyle, setNodes, isMobile]);
 
   useEffect(() => {
-    if (!user) {
-      setCloudFiles([]);
-      return;
-    }
+    if (!user) { setCloudFiles([]); return; }
     fetchCloudFiles();
   }, [user]);
 
@@ -304,18 +298,15 @@ function FSMEditor() {
     return [];
   };
 
-  const onConnect = useCallback(
-    (params) => {
-      const allowed = getAllowedEvents(params.source);
-      if (allowed.length === 0) {
-        alert("Из этого состояния переходы запрещены");
-        return;
-      }
-      setSelectedConnection({ ...params, allowed });
-      setShowDialog(true);
-    },
-    [cmpExit]
-  );
+  const onConnect = useCallback((params) => {
+    const allowed = getAllowedEvents(params.source);
+    if (allowed.length === 0) {
+      alert("Из этого состояния переходы запрещены");
+      return;
+    }
+    setSelectedConnection({ ...params, allowed });
+    setShowDialog(true);
+  }, [cmpExit]);
 
   const confirmEvent = (eventIndex) => {
     if (!selectedConnection) return;
@@ -396,18 +387,14 @@ function FSMEditor() {
     const buffer = new ArrayBuffer(32);
     const view = new DataView(buffer);
     let offset = 0;
-
     for (let i = 0; i < 4; i++) {
       view.setUint32(offset, parseInt(cmpValues[i], 16) || 0, true);
       offset += 4;
     }
-
     let nextVals = 0;
     for (let i = 0; i < 10; i++) {
       const edge = edges.find((e) => e.data?.eventIndex === i);
-      if (edge) {
-        nextVals |= (Number(edge.target) & 0x7) << BIT_SHIFTS[i];
-      }
+      if (edge) { nextVals |= (Number(edge.target) & 0x7) << BIT_SHIFTS[i]; }
     }
     view.setUint32(offset, nextVals, true);
     offset += 4;
@@ -423,11 +410,7 @@ function FSMEditor() {
   }
 
   function applyBuffer(buffer) {
-    if (buffer.byteLength < 24) {
-      alert("Файл слишком мал");
-      return;
-    }
-
+    if (buffer.byteLength < 24) { alert("Файл слишком мал"); return; }
     const view = new DataView(buffer);
     let offset = 0;
 
@@ -458,7 +441,6 @@ function FSMEditor() {
     const newEdges = [];
     for (let i = 0; i < 10; i++) {
       const targetState = (nextVals >>> BIT_SHIFTS[i]) & 0x7;
-
       let sourceState = 0;
       if (i === 0 || i === 5) sourceState = newCmpExit[0] ? 0 : 4;
       else if (i === 1 || i === 6) sourceState = newCmpExit[1] ? 0 : 1;
@@ -482,7 +464,6 @@ function FSMEditor() {
         data: { eventIndex: i, label: EVENT_NAMES[i], kind: isLoop ? "loop" : "edge" },
       });
     }
-
     setEdges(newEdges);
   }
 
@@ -519,7 +500,6 @@ function FSMEditor() {
     if (!user) return alert("Сначала войдите в аккаунт.");
     const fileName = prompt("Введите название:");
     if (!fileName) return;
-
     setIsUploading(true);
     try {
       const buffer = serializeConfig();
@@ -536,9 +516,7 @@ function FSMEditor() {
       alert("Сохранено в облако.");
     } catch (err) {
       alert(`Ошибка при сохранении: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-    }
+    } finally { setIsUploading(false); }
   }
 
   async function loadFromCloud(filePath) {
@@ -548,9 +526,8 @@ function FSMEditor() {
       const reader = new FileReader();
       reader.onload = (e) => applyBuffer(e.target.result);
       reader.readAsArrayBuffer(data);
-    } catch (err) {
-      alert(`Не удалось загрузить файл: ${err.message}`);
-    }
+      if (isMobile) setIsMenuOpen(false); // Закрываем меню после загрузки на мобилке
+    } catch (err) { alert(`Не удалось загрузить файл: ${err.message}`); }
   }
 
   async function deleteFromCloud(dbId, filePath) {
@@ -561,75 +538,104 @@ function FSMEditor() {
       const { error: dbError } = await supabase.from("binaries").delete().eq("id", dbId);
       if (dbError) throw dbError;
       setCloudFiles((prev) => prev.filter((f) => f.id !== dbId));
-    } catch (err) {
-      alert(`Не удалось удалить файл: ${err.message}`);
-    }
+    } catch (err) { alert(`Не удалось удалить файл: ${err.message}`); }
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden" }}>
+    <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <AuthGate />
 
-      <div style={{ position: "absolute", top: 12, left: 12, zIndex: 20, padding: 12, background: "white", border: "1px solid #ddd", borderRadius: 12, width: 320, maxHeight: "95vh", overflowY: "auto", boxShadow: "0 4px 20px rgba(0,0,0,0.10)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <b>FSM editor</b>
-          {user ? <button onClick={signOut} style={btnStyle("#d32f2f")}>Выйти</button> : <span style={{ fontSize: 12, color: "#666" }}> Вы не авторизованы </span>}
+      {/* Кнопка бургера для мобилок */}
+      {isMobile && (
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          style={{
+            position: "fixed",
+            top: 12,
+            left: 12,
+            zIndex: 100,
+            padding: "10px 16px",
+            background: "#2196f3",
+            color: "white",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: "bold",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.2)"
+          }}
+        >
+          {isMenuOpen ? "✕ Закрыть" : "☰ Меню настроек"}
+        </button>
+      )}
+
+      {/* Боковое меню / Выпадающая шторка */}
+      <div style={{
+        position: isMobile ? "fixed" : "absolute",
+        top: isMobile ? 0 : 12,
+        left: isMobile ? 0 : 12,
+        transform: isMobile && !isMenuOpen ? "translateX(-100%)" : "translateX(0)",
+        transition: "transform 0.3s ease",
+        zIndex: 90,
+        padding: 16,
+        background: "white",
+        border: isMobile ? "none" : "1px solid #ddd",
+        borderRadius: isMobile ? 0 : 12,
+        width: isMobile ? "100%" : 320,
+        height: isMobile ? "100vh" : "calc(100vh - 24px)",
+        maxHeight: isMobile ? "100vh" : "95vh",
+        overflowY: "auto",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+        boxSizing: "border-box"
+      }}>
+        {/* Отступ для мобилок сверху, чтобы бургер не перекрывал заголовок */}
+        {isMobile && <div style={{ height: 50 }} />}
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+          <b style={{ fontSize: 20 }}>FSM editor</b>
+          {user ? <button onClick={signOut} style={{...btnStyle("#d32f2f"), flex: "none", padding: "6px 12px"}}>Выйти</button> : <span style={{ fontSize: 12, color: "#666" }}>Нет авторизации</span>}
         </div>
-        <div style={{ position: "relative", marginBottom: 10 }}>
+
+        <div style={{ position: "relative", marginBottom: 15 }}>
           <button
-            onMouseEnter={() => setShowHelp(true)}
-            onMouseLeave={() => setShowHelp(false)}
+            onClick={() => setShowHelp(!showHelp)}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
+              padding: "6px 12px",
+              borderRadius: 6,
               border: "1px solid #999",
               background: "#fafafa",
               cursor: "pointer",
               fontWeight: "bold",
-              fontSize: 18,
             }}
           >
-            ?
+            {showHelp ? "Скрыть инфо" : "Показать инструкцию"}
           </button>
 
           {showHelp && (
-            <div
-              style={{
-                position: "absolute",
-                top: 40,
-                left: 0,
-                width: 280,
-                background: "white",
-                border: "1px solid #ccc",
-                borderRadius: 10,
-                padding: 12,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                zIndex: 1000,
-                fontSize: 13,
-                lineHeight: 1.5,
-              }}
-            >
-      <b>Инструкция:</b>
+            <div style={{
+              marginTop: 10,
+              background: "#f9f9f9",
+              border: "1px solid #ccc",
+              borderRadius: 10,
+              padding: 12,
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}>
+              <b>Инструкция:</b>
+              <ul style={{ paddingLeft: 18, margin: "5px 0 0 0" }}>
+                <li>S0 – программируемый компаратор</li>
+                <li>S1 – CMP1 – компаратор</li>
+                <li>S2 – CMP2 – компаратор</li>
+                <li>S3 – CMP3 – специализированный компаратор</li>
+                <li>S4 – CMP0 – компаратор</li>
+                <li>Загрузить .bin — редактировать конфиг</li>
+                <li>Скачать .bin — сохранить на устройство</li>
+                <li>Удаление перехода — двойной тап в списке ниже</li>
+              </ul>
+            </div>
+          )}
+        </div>
 
-      <ul style={{ paddingLeft: 18 }}>
-        <li>S0 –  программируемый компаратор</li>
-        <li>S1 – CMP1 – компаратор</li>
-        <li>S2 – CMP2 – компаратор</li>
-        <li>S3 – CMP3 – специализированный компаратор</li>
-        <li>S4 – CMP0 – компаратор</li>
-        <li>S6 – зарезервирован на будущее</li>
-        <li>S7 – зарезервирован на будущее</li>
-        <li>Загрузить .bin — загрузка конфигурации cd в приложение для редактирования</li>
-        <li>Скачать .bin — сохранение бинарного файла в память устройства</li>
-        <li>Скрыть нужные состояния и переходы можно кнопками на панели</li>
-        <li>Удалить переходы можно двойным нажатием на соответсвующий переход в панели</li>
-      </ul>
-    </div>
-  )}
-</div>
-        <div>
-          <b>CMP:</b>
+        <div style={{ marginBottom: 12 }}>
+          <b>CMP Values:</b>
           {cmpValues.map((v, i) => (
             <input
               key={i}
@@ -639,91 +645,80 @@ function FSMEditor() {
                 copy[i] = e.target.value;
                 setCmpValues(copy);
               }}
-              style={{ display: "block", margin: 2, width: "100%", boxSizing: "border-box" }}
+              style={{ display: "block", margin: "6px 0", width: "100%", padding: 8, boxSizing: "border-box", borderRadius: 6, border: "1px solid #ccc" }}
             />
           ))}
         </div>
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginBottom: 12 }}>
           <b>Timer:</b>
-          <input value={timer} onChange={(e) => setTimer(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
+          <input value={timer} onChange={(e) => setTimer(e.target.value)} style={{ width: "100%", padding: 8, boxSizing: "border-box", borderRadius: 6, border: "1px solid #ccc" }} />
         </div>
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginBottom: 12 }}>
           <b>CMP_EXIT:</b>
-          <div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 4 }}>
             {cmpExit.map((v, i) => (
-              <label key={i} style={{ marginRight: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={!!v}
-                  onChange={() => {
-                    const copy = [...cmpExit];
-                    copy[i] ^= 1;
-                    setCmpExit(copy);
-                  }}
-                />
-                {i}
+              <label key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input type="checkbox" checked={!!v} onChange={() => { const copy = [...cmpExit]; copy[i] ^= 1; setCmpExit(copy); }} /> {i}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginBottom: 12 }}>
           <b>Контекст:</b>
-          <div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
             {contexts.map((v, i) => (
-              <label key={i} style={{ marginRight: 8 }}>
+              <label key={i} style={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <input type="checkbox" checked={!!v} onChange={() => updateContexts(i)} /> S{i}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginBottom: 12 }}>
           <b>Видимость:</b>
-          <div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
             {visibility.map((v, i) => (
-              <label key={i} style={{ marginRight: 8 }}>
+              <label key={i} style={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <input type="checkbox" checked={!!v} onChange={() => updateVisibility(i)} /> S{i}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 10 }}>
-          <b>Переходы:</b>
-          <ul style={{ maxHeight: 140, overflowY: "auto", paddingLeft: 16, background: "#f7f7f7", padding: 8, borderRadius: 8 }}>
+        <div style={{ marginBottom: 12 }}>
+          <b>Переходы (двойной тап для удаления):</b>
+          <ul style={{ maxHeight: 120, overflowY: "auto", paddingLeft: 0, listStyle: "none", background: "#f7f7f7", padding: 8, borderRadius: 8, margin: "4px 0 0 0" }}>
             {edges.map((e) => (
-              <li key={e.id} style={{ cursor: "pointer" }} onDoubleClick={() => deleteEdge(e.id)}>
+              <li key={e.id} style={{ padding: "4px 0", borderBottom: "1px solid #eee", cursor: "pointer" }} onDoubleClick={() => deleteEdge(e.id)}>
                 {e.label}: S{e.source} → S{e.target}
               </li>
             ))}
           </ul>
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input ref={fileInputRef} type="file" accept=".bin" style={{ display: "none" }} onChange={loadFromBin} />
-          <button onClick={() => fileInputRef.current?.click()} style={btnStyle("#2196f3")}>Загрузить .bin</button>
-          <button onClick={saveToBin} style={btnStyle("#4caf50")}>Скачать .bin</button>
+          <button onClick={() => fileInputRef.current?.click()} style={btnStyle("#2196f3")}>Загрузить</button>
+          <button onClick={saveToBin} style={btnStyle("#4caf50")}>Скачать</button>
         </div>
 
-        <div style={{ marginTop: 8 }}>
-          <button onClick={saveToCloud} disabled={isUploading || !user} style={{ ...btnStyle("#673ab7"), width: "100%", opacity: isUploading || !user ? 0.6 : 1 }}>
-            {isUploading ? "Сохраняю..." : "Сохранить в облако"}
-          </button>
-        </div>
+        <button onClick={saveToCloud} disabled={isUploading || !user} style={{ ...btnStyle("#673ab7"), width: "100%", opacity: isUploading || !user ? 0.6 : 1, marginBottom: 12 }}>
+          {isUploading ? "Сохраняю..." : "Сохранить в облако"}
+        </button>
 
-        <div style={{ marginTop: 12 }}>
-          <b>Файлы:</b>
+        <div>
+          <b>Облачные файлы:</b>
           {!user ? (
-            <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>Войдите, чтобы видеть файлы из облака.</div>
+            <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>Войдите для синхронизации.</div>
           ) : cloudFiles.length === 0 ? (
-            <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>Пока пусто.</div>
+            <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>Пока пусто.</div>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+            <ul style={{ listStyle: "none", padding: 0, marginTop: 6 }}>
               {cloudFiles.map((f) => (
-                <li key={f.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 6, background: "#f1f1f1", padding: 6, borderRadius: 8 }}>
+                <li key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, background: "#f1f1f1", padding: 6, borderRadius: 8 }}>
                   <span style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={f.name}>{f.name}</span>
                   <div style={{ display: "flex", gap: 4 }}>
                     <button onClick={() => loadFromCloud(f.file_path)} style={smallBtn("#2196f3")}>⬇</button>
@@ -736,28 +731,45 @@ function FSMEditor() {
         </div>
       </div>
 
-      <ReactFlow
-        nodes={nodes}
-        edges={decoratedEdges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        fitView
-        connectionLineType="smoothstep"
-      >
-        <MiniMap />
-        <Controls />
-        <Background />
-      </ReactFlow>
+      {/* Поле графа */}
+      <div style={{ flexGrow: 1, width: "100%", height: "100%" }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={decoratedEdges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          fitView
+          connectionLineType="smoothstep"
+        >
+          <MiniMap style={{ bottom: isMobile ? 20 : 10, right: 10 }} />
+          <Controls style={{ bottom: isMobile ? 20 : 10, left: isMobile ? 10 : 350 }} />
+          <Background />
+        </ReactFlow>
+      </div>
 
+      {/* Диалоговое окно выбора события */}
       {showDialog && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "white", padding: 20, border: "1px solid black", zIndex: 100, borderRadius: 10 }}>
-          <div style={{ fontWeight: 800, marginBottom: 10 }}>Выберите событие:</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        <div style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          background: "white",
+          padding: 20,
+          border: "1px solid black",
+          zIndex: 110,
+          borderRadius: 10,
+          width: "85%",
+          maxWidth: "400px",
+          boxSizing: "border-box"
+        }}>
+          <div style={{ fontWeight: 800, marginBottom: 12 }}>Выберите событие:</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}>
             {selectedConnection?.allowed?.map((i) => (
-              <button key={i} onClick={() => confirmEvent(i)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ccc", background: "#f5f5f5", cursor: "pointer" }}>
+              <button key={i} onClick={() => confirmEvent(i)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc", background: "#f5f5f5", cursor: "pointer", fontSize: "14px" }}>
                 {EVENT_NAMES[i]}
               </button>
             ))}
@@ -768,15 +780,14 @@ function FSMEditor() {
     </div>
   );
 }
-
 function smallBtn(bg) {
   return {
-    padding: "4px 8px",
+    padding: "6px 10px",
     border: "none",
     borderRadius: 6,
     color: "white",
     background: bg,
     cursor: "pointer",
-    fontSize: 12,
+    fontSize: 14,
   };
 }
